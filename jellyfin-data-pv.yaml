@@ -1,0 +1,25 @@
+# jellyfin-data-pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jellyfin-data-pv
+spec:
+  capacity:
+    storage: 20Gi  # Adjust size as needed
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 192.168.0.2  # Replace with your NFS server IP
+    path: /mnt/storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-data-pvc
+  namespace: jellyfin
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi  # Must match the PV size

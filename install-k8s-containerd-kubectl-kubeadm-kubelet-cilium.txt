@@ -1,0 +1,76 @@
+   19  sudo apt install openssh-server
+   20  sudo vim /etc/ssh/sshd_config
+   21  sudo systemctl start ssh
+   22  sudo systemctl enable ssh
+   23  sudo systemctl start sshd
+   25  ip a
+   26  reboot
+   27  sudo swapoff -a
+   28  sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+   29  sudo vim /etc/netplan/50-cloud-init.yaml 
+   30  sudo nano /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+   33  sudo vim /etc/netplan/50-cloud-init.yaml 
+   35  fg
+   36  sudo netplan apply
+   42  vim .ssh/authorized_keys 
+   43  sudo sysytemctl restart ssh
+   44  sudo systemctl restart ssh
+   45  sudo systemctl restart sshd
+   50  sudo vim /etc/hosts
+   51  sudo hostnamectl set-hostname k8s-control
+   56  cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+   57  overlay
+   58  br_netfilter
+   59  EOF
+   60  sudo modprobe overlay
+   61  sudo modprobe br_netfilter
+   62  cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+   63  net.bridge.bridge-nf-call-iptables  = 1
+   64  net.bridge.bridge-nf-call-ip6tables = 1
+   65  net.ipv4.ip_forward                 = 1
+   66  EOF
+   67  sudo sysctl --system
+   68  sudo apt update
+   69  sudo apt-get -y install containerd 
+   70  sudo mkdir /etc/containerd
+   71  containerd config default | sudo tee /etc/containerd/config.toml 
+   72  sudo vim /etc/containerd/config.toml
+   73  sudo systemctl status containerd
+   74  sudo systemctl restart containerd
+   75  sudo apt-get update
+   76  sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+   77  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   78  echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+   79  sudo apt-get update
+   80  apt-cache madison kubeadm
+   81  sudo apt-get -y install kubeadm=1.28.0-1.1 kubectl=1.28.0-1.1 kubelet=1.28.0-1.1
+   82  sudo apt-mark hold kubelet kubeadm kubectl
+   83  service kubelet status
+   85  sudo swapoff -a
+   86  sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+   87  sudo kubeadm init
+   88  sudo kubectl get node --kubeconfig /etc/kubernetes/admin.conf
+   91  mkdir -p .kube
+   93  sudo cp -i /etc//kubernetes/admin.conf ~/.kube/config
+   95  sudo chown $(id -u):$(id -g) ~/.kube/config 
+   99  kubectl get pods
+  100  kubectl get nodes
+  102  kubectl get ns
+  131  sudo systemctl status kubelet
+  132  sudo journalctl -u kubelet -f
+  133  sudo swapoff -a
+  134  sudo journalctl -u kubelet -f
+  141  sudo swapon -s
+  142  free -h
+  143  sudo sed -i '/[[:space:]]swap[[:space:]]/ s/^#*/#/' /etc/fstab
+  144  cat /etc/fstab
+  147  kubectl get pods -n kube-system
+  148  CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+  149  CLI_ARCH=amd64
+  150  if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+  151  curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+  152  sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+  153  sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+  154  rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+  158  cilium install --set ipam.operator.clusterPoolIPv4CIDRList="10.0.0.0/9"
+  159  cilium status
