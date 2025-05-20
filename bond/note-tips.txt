@@ -1,0 +1,10 @@
+To better understand the power and intelligence of Kubernetes, we observe that, by design, the system protects itself from downtime when updating or recreating a deployment. For instance, when you modify the specifications of a deployment, Kubernetes ensures that the containers or replicas are not stopped all at once. Instead, it keeps at least one instance running to maintain service availability while the changes are applied and the deployment's success is verified.
+
+To see that in action; 
+    1- open two terminals and run on one of them the command:
+    $ watch -n 1 "kubectl get pods"
+
+    2- On the other terminal; edit the deployment file and modify for example the image version, save the file and exit, in the prompt type:
+    $ kubectl apply -f deployment.yaml
+
+Go to the other terminal where you run the watch command, you'll notice that the container still running untill the new one is up and running successfuly, then the old one will be removed.
