@@ -1,5 +1,5 @@
 # lab-k8s
-This Lab-Project includes some yaml configuration files (Deployments, Services, Volumes etc...) for training purposes only, so feel free to clone it, but under your own responsibility.
+This Lab-Project includes some yaml configuration files (Deployments, Services, Volumes etc...) for training purposes only, so feel free to clone it, under your own responsibility.
 
 ## Some commands help you to work with pods and deployment.
 ### What is the difference between:
@@ -47,9 +47,9 @@ strategy:
   type: Recreate
 
 
-## By default the current namespace is default, but if we need to change it to another namespace we first create that namespace and set it current one!
+## By default the current namespace is <<default>>, but if we need to change it to another namespace we first create that namespace and set it as current one!
 
 - kubectl create namespace <namespace name>
 - kubectl config set-context --current --namespace=<namespace name>
 
-Now if we create any pod or deployment will be put into bond namespace
+Now if we create any pod or deployment it will be placed into bond namespace.

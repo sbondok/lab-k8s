@@ -1,0 +1,148 @@
+Note: By default when we try to expose pod or deployment to a specific port, kubernetes will handle that by using ClusterIp.
+To access the application in the pod we use port forwarding; 
+
+$ kubectl port-forward pods/<name> 9000
+
+Port forward can be set to a service as well:
+
+$ kubectl port-forward services/<name> 8000
+
+The limitation here is you can not access the application from outside the cluster server!!!
+
+If we need to access the application from outside the cluster we use;
+
+1- Node port
+2- Loadbalancer
+
+Here we are going to install metalLB load balancer open source solution with our K8s cluster...
+
+1- kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/config/manifests/metallb-native.yaml
+2- Wait for MetalLB pods to be ready:
+	kubectl get pods -n metallb-system
+3- Create a configuration file (e.g., metallb-config.yaml):
+
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.0.200-192.168.0.210 # Customize this to your reserved IP range
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - default-pool
+
+4- Create a sample deployment (e.g., nginx-deployment.yaml):
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+
+5- Create a LoadBalancer service for the deployment (e.g., nginx-service.yaml):
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+
+6- Apply the deployment and service:
+
+kubectl apply -f nginx-deployment.yaml
+kubectl apply -f nginx-service.yaml
+
+7- Check the service for an external IP:
+
+kubectl get svc nginx-service
+
+8- Output will look something like:
+
+NAME            TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+nginx-service   LoadBalancer   10.103.151.27   192.168.0.200   80:3xxxx/TCP   1m
+
+Access your Nginx service:
+Open a web browser on any machine in your 192.168.0.0/24 network and go to http://<EXTERNAL-IP> (e.g., http://192.168.0.200). You should see the Nginx welcome page.
+
+===================================================================
+
+Instead of nginx deploymet and service files we can use mealie files:
+
+mealie-deploymet.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bond-mealie
+  labels:
+    app: mealie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mealie
+  template:
+    metadata:
+      labels:
+        app: mealie
+    spec:
+      containers:
+      - name: mealie
+        image: ghcr.io/mealie-recipes/mealie:v1.3.2
+        ports:
+          - containerPort: 9000
+
+mealie-svc.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mealie
+  name: mealie
+spec:
+  ports:
+  - port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: mealie
+  type: LoadBalancer
+
+
+kubectl apply -f mealie-deploymet.yaml
+kubectl apply -f mealie-svc.yaml
+
+Open any web browser:
+http://192.168.0.200:9000
+
+
