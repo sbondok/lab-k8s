@@ -95,7 +95,7 @@ Open a web browser on any machine in your 192.168.0.0/24 network and go to http:
 
 ===================================================================
 
-Instead of nginx deploymet and service files we can use mealie files:
+Instead of nginx deploymet and service files we can use mealie files with persistent Volume:
 
 mealie-deploymet.yaml
 
@@ -120,6 +120,15 @@ spec:
         image: ghcr.io/mealie-recipes/mealie:v1.3.2
         ports:
           - containerPort: 9000
+        volumeMounts:
+          - mountPath: /app/data
+            name: mealie-data
+      volumes:
+        - name: mealie-data
+          persistentVolumeClaim:
+            claimName: mealie-data
+
+
 
 mealie-svc.yaml
 
@@ -142,7 +151,39 @@ spec:
 kubectl apply -f mealie-deploymet.yaml
 kubectl apply -f mealie-svc.yaml
 
+
+Create Persistent Volume; mealie-pv.yaml
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mealie-data-pv
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  hostPath:
+    path: "/data/mealie"
+
+Create Persistent Volume Claim to bind the persistent volume with the container volume mentioned in the mealie-deployment.yaml file.
+mealie-pvc.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mealie-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: ""
+
 Open any web browser:
 http://192.168.0.200:9000
+Enjoy working with mealie solution - with persistent data even if the container is deleted and recreated again.
 
 
