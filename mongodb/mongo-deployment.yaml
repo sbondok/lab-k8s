@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo
+          ports:
+            - containerPort: 27017
+          # 'env' is now correctly placed here, at the same level as 'ports', 'image', 'name'
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongodb-root-username
+            - name: MONGO_INITDB_ROOT_PASSWORD # Using the recommended variable name
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongodb-root-password
+# we can add another yaml file so long they are related
+# mongo-service.yaml
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: mongodb-service # this name will be the value of database_url key in mongo-configmap.yaml 
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - protocol: TCP
+    port: 27017  # this is the exposed service port.
+    targetPort: 27017   # this is the container port. 
+
+
+
